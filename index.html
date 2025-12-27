@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lucas Tracker Sesc 🚀</title>
+    
+    <!-- Configurações de Aplicativo (PWA) -->
+    <meta name="theme-color" id="theme-color-meta" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Lucas Life">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2738/2738651.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-main: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f1f5f9;
+        }
+
+        body.light-mode {
+            --bg-main: #f1f5f9;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --text-main: #0f172a;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            transition: all 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Inter', sans-serif;
+            /* Evita scroll elástico no iOS */
+            overflow-x: hidden;
+            overscroll-behavior-y: contain;
+        }
+
+        body.grayscale-mode {
+            filter: grayscale(100%) contrast(1.1);
+        }
+        
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .light-mode .glass-card {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .water-btn { transition: all 0.2s; }
+        .water-btn.active {
+            background-color: #3b82f6;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+            border-color: #60a5fa;
+            color: white;
+        }
+
+        .option-btn { transition: all 0.2s; }
+        .option-btn.active {
+            background-color: #22c55e;
+            color: white;
+            border-color: #4ade80;
+        }
+
+        .progress-bar {
+            height: 10px;
+            border-radius: 5px;
+            background: rgba(100, 116, 139, 0.2);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .cal-fill { background: linear-gradient(to right, #4ade80, #3b82f6); }
+        .water-fill { background: linear-gradient(to right, #3b82f6, #60a5fa); }
+
+        button:active { transform: scale(0.96); }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="text-slate-100 pb-10">
+
+    <div class="max-w-md mx-auto p-4 sm:p-6">
+        <!-- Cabeçalho -->
+        <header class="flex justify-between items-start py-6">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 uppercase">
+                    Lucas Life 2.0
+                </h1>
+                <div class="flex items-center gap-2 mt-1">
+                    <p class="text-slate-400 text-xs font-medium">Meta: 82kg 🎯</p>
+                    <button onclick="toggleTheme()" class="text-[10px] bg-slate-800 text-white px-2 py-0.5 rounded border border-slate-700 uppercase font-bold" id="themeBtn">
+                        <i class="fas fa-moon mr-1"></i> Dark
+                    </button>
+                    <button onclick="toggleGrayscale()" class="text-[10px] bg-slate-800 text-white px-2 py-0.5 rounded border border-slate-700 uppercase font-bold">
+                         B&W
+                    </button>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="block text-[10px] uppercase tracking-widest text-slate-500 font-bold">Peso Atual</span>
+                <div class="flex items-center justify-end">
+                    <input type="number" id="pesoInput" step="0.1" placeholder="97.0" 
+                           class="bg-transparent text-2xl font-bold text-green-500 w-20 text-right focus:outline-none"
+                           onchange="saveData()">
+                    <span class="text-green-500 font-bold ml-1 text-sm">kg</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Painel de Energia -->
+        <section class="glass-card rounded-3xl p-5 mb-4 shadow-2xl border-l-4 border-green-500">
+            <div class="flex justify-between items-end mb-2">
+                <div>
+                    <h2 class="text-[10px] font-bold opacity-70 uppercase tracking-wider">Energia Sesc (Média)</h2>
+                    <div class="flex items-baseline gap-1">
+                        <span id="calCount" class="text-3xl font-black">0</span>
+                        <span class="opacity-50 text-xs font-bold">/ 1900 kcal</span>
+                    </div>
+                </div>
+                <div class="text-right text-[9px] opacity-60 font-mono leading-tight">
+                    PROT: <span id="protCount" class="text-blue-500 font-bold">0g</span><br>
+                    CARB: <span id="carbCount" class="text-green-500 font-bold">0g</span>
+                </div>
+            </div>
+            <div class="progress-bar">
+                <div id="calProgress" class="progress-fill cal-fill" style="width: 0%"></div>
+            </div>
+        </section>
+
+        <!-- Barra de Hidratação -->
+        <section class="glass-card rounded-3xl p-5 mb-6 shadow-2xl border-l-4 border-blue-500">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-[10px] font-bold opacity-70 uppercase tracking-wider">
+                    <i class="fas fa-tint text-blue-400 mr-1"></i> Hidratação (Meta 3L)
+                </h2>
+                <span id="waterCounter" class="text-[10px] font-black text-blue-500 uppercase">0 / 3.0L</span>
+            </div>
+            <div class="progress-bar mb-4">
+                <div id="waterProgress" class="progress-fill water-fill" style="width: 0%"></div>
+            </div>
+            <div class="grid grid-cols-6 gap-2">
+                <script>
+                    for(let i=0; i<6; i++) {
+                        document.write(`<button onclick="toggleWater(${i})" class="water-btn h-11 rounded-xl border border-slate-700/30 flex items-center justify-center text-[10px] font-black bg-slate-800/20">500</button>`);
+                    }
+                </script>
+            </div>
+        </section>
+
+        <!-- Plano Alimentar Sesc -->
+        <section class="glass-card rounded-3xl p-5 mb-6 shadow-2xl">
+            <h2 class="text-sm font-bold mb-4 flex items-center text-green-500 uppercase tracking-widest">
+                <i class="fas fa-utensils mr-2"></i> Dieta Sesc A/B
+            </h2>
+            <div class="space-y-5" id="mealContainer">
+                <!-- Meals will be injected here -->
+            </div>
+        </section>
+
+        <!-- Suplementos -->
+        <section class="grid grid-cols-3 gap-2 mb-6">
+            <button onclick="toggleExtra('creatina')" id="card-creatina" class="glass-card p-4 rounded-2xl text-center border-2 border-transparent transition-all">
+                <i class="fas fa-clock text-green-400 text-lg mb-1"></i>
+                <span class="block text-[8px] font-black uppercase tracking-tighter">Creatina (3g)</span>
+            </button>
+            <button onclick="toggleExtra('fruta')" id="card-fruta" class="glass-card p-4 rounded-2xl text-center border-2 border-transparent transition-all">
+                <i class="fas fa-apple-alt text-yellow-500 text-lg mb-1"></i>
+                <span class="block text-[8px] font-black uppercase">Fruta/Aveia</span>
+            </button>
+            <button onclick="toggleExtra('treino')" id="card-treino" class="glass-card p-4 rounded-2xl text-center border-2 border-transparent transition-all">
+                <i class="fas fa-dumbbell text-purple-500 text-lg mb-1"></i>
+                <span class="block text-[8px] font-black uppercase">Treino</span>
+            </button>
+        </section>
+
+        <!-- Ações -->
+        <div class="space-y-3 mb-8">
+            <button onclick="finishDay()" class="w-full py-5 rounded-2xl bg-gradient-to-r from-green-500 to-blue-600 text-white font-black text-sm shadow-xl uppercase tracking-widest">
+                Finalizar e Salvar Dia
+            </button>
+            <div class="flex gap-2">
+                <button onclick="exportData()" class="flex-1 py-3 bg-slate-800/50 rounded-xl text-[10px] font-black border border-slate-700/30 text-slate-400 uppercase">
+                    Exportar Logs
+                </button>
+                <button onclick="resetApp()" class="flex-1 py-3 bg-red-900/10 rounded-xl text-[10px] font-black border border-red-900/20 text-red-500 uppercase">
+                    Resetar Hoje
+                </button>
+            </div>
+        </div>
+
+        <!-- Histórico -->
+        <section class="glass-card rounded-3xl p-5 mb-10">
+            <h2 class="text-xs font-black mb-4 flex items-center opacity-70 uppercase tracking-widest border-b border-slate-700/30 pb-2">
+                <i class="fas fa-history mr-2"></i> Evolução
+            </h2>
+            <div id="historyList" class="space-y-3 max-h-60 overflow-y-auto pr-1 text-[10px]">
+                <p class="text-slate-500 italic text-center py-4">Sem histórico.</p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const dietaNutri = [
+            { label: "Café da Manhã", time: "05:30", A: { desc: "Iogurte Nat. + Whey + Aveia + Fruta", kcal: 320, prot: 28, carb: 35 }, B: { desc: "2 Ovos + Qj Minas + Fruta + Aveia", kcal: 350, prot: 22, carb: 30 } },
+            { label: "Lanche Manhã", time: "09:00", A: { desc: "2 Pães Integral + Requeijão Light", kcal: 180, prot: 8, carb: 25 }, B: { desc: "1 Pão Francês (s/ miolo) + 1 Ovo", kcal: 210, prot: 10, carb: 28 } },
+            { label: "Almoço", time: "13:00", A: { desc: "Arroz/Feijão + Carne Magra + Salada + Fruta", kcal: 550, prot: 35, carb: 60 }, B: { desc: "Batata Doce + Peito de Frango + Salada + Fruta", kcal: 520, prot: 38, carb: 55 } },
+            { label: "Lanche Tarde", time: "17:00", A: { desc: "Suco Nat. + 2 Pães Integral + Requeijão", kcal: 250, prot: 9, carb: 40 }, B: { desc: "Suco Nat. + 1 Pão Sal + 2 fatias Qj Minas", kcal: 280, prot: 12, carb: 42 } },
+            { label: "Jantar", time: "20:00", A: { desc: "Arroz + Carne Magra (120g) + Legumes + Salada", kcal: 450, prot: 32, carb: 40 }, B: { desc: "Macarrão Integral + Frango + Legumes + Salada", kcal: 430, prot: 30, carb: 45 } },
+            { label: "Ceia", time: "23:00", A: { desc: "Leite Semi-desnatado + 15g Whey", kcal: 160, prot: 18, carb: 10 }, B: { desc: "Apenas Leite Semi-desnatado", kcal: 90, prot: 6, carb: 10 } }
+        ];
+
+        let state = {
+            water: Array(6).fill(false),
+            selectedOptions: Array(6).fill(null),
+            creatina: false, fruta: false, treino: false,
+            peso: 97.0, grayscale: false, isLight: false,
+            history: []
+        };
+
+        const CAL_GOAL = 1900;
+        const WATER_GOAL = 6; 
+
+        window.onload = () => {
+            renderMeals();
+            const saved = localStorage.getItem('lucasTrackerSescV2');
+            if (saved) {
+                state = JSON.parse(saved);
+                applyTheme();
+                if(state.grayscale) document.body.classList.add('grayscale-mode');
+                render();
+            } else {
+                render();
+            }
+        };
+
+        function renderMeals() {
+            const container = document.getElementById('mealContainer');
+            container.innerHTML = dietaNutri.map((meal, i) => `
+                <div class="meal-block border-b border-slate-700/10 pb-4 last:border-0">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[11px] font-black opacity-80 uppercase tracking-tighter">${meal.time} • ${meal.label}</span>
+                        <div class="flex gap-2">
+                            <button onclick="selectOption(${i}, 'A')" id="opt-${i}-A" class="option-btn px-3 py-1.5 rounded-lg border border-slate-700/30 text-[10px] font-black bg-slate-800/20 uppercase">Opção A</button>
+                            <button onclick="selectOption(${i}, 'B')" id="opt-${i}-B" class="option-btn px-3 py-1.5 rounded-lg border border-slate-700/30 text-[10px] font-black bg-slate-800/20 uppercase">Opção B</button>
+                        </div>
+                    </div>
+                    <p id="desc-${i}" class="text-[10px] opacity-50 italic leading-snug">Pendente...</p>
+                </div>
+            `).join('');
+        }
+
+        function saveData() {
+            const inputPeso = document.getElementById('pesoInput').value;
+            if(inputPeso) state.peso = parseFloat(inputPeso);
+            localStorage.setItem('lucasTrackerSescV2', JSON.stringify(state));
+        }
+
+        function toggleTheme() {
+            state.isLight = !state.isLight;
+            applyTheme();
+            saveData();
+        }
+
+        function applyTheme() {
+            const btn = document.getElementById('themeBtn');
+            const meta = document.getElementById('theme-color-meta');
+            if(state.isLight) {
+                document.body.classList.add('light-mode');
+                btn.innerHTML = '<i class="fas fa-sun mr-1"></i> Light';
+                meta.setAttribute('content', '#f1f5f9');
+            } else {
+                document.body.classList.remove('light-mode');
+                btn.innerHTML = '<i class="fas fa-moon mr-1"></i> Dark';
+                meta.setAttribute('content', '#0f172a');
+            }
+        }
+
+        function toggleGrayscale() {
+            state.grayscale = !state.grayscale;
+            document.body.classList.toggle('grayscale-mode');
+            saveData();
+        }
+
+        function toggleWater(index) {
+            state.water[index] = !state.water[index];
+            render();
+            saveData();
+        }
+
+        function selectOption(mealIdx, opt) {
+            state.selectedOptions[mealIdx] = state.selectedOptions[mealIdx] === opt ? null : opt;
+            render();
+            saveData();
+        }
+
+        function toggleExtra(key) {
+            state[key] = !state[key];
+            render();
+            saveData();
+        }
+
+        function calculateTotals() {
+            let tk = 0, tp = 0, tc = 0;
+            state.selectedOptions.forEach((opt, idx) => {
+                if (opt) {
+                    const d = dietaNutri[idx][opt];
+                    tk += d.kcal; tp += d.prot; tc += d.carb;
+                }
+            });
+            return { tk, tp, tc };
+        }
+
+        function render() {
+            document.getElementById('pesoInput').value = state.peso;
+            const totals = calculateTotals();
+            document.getElementById('calCount').innerText = totals.tk;
+            document.getElementById('protCount').innerText = totals.tp + 'g';
+            document.getElementById('carbCount').innerText = totals.tc + 'g';
+            
+            const calPerc = (totals.tk / CAL_GOAL) * 100;
+            document.getElementById('calProgress').style.width = Math.min(calPerc, 100) + '%';
+
+            const waterCount = state.water.filter(w => w).length;
+            const waterPerc = (waterCount / WATER_GOAL) * 100;
+            document.getElementById('waterProgress').style.width = waterPerc + '%';
+            document.getElementById('waterCounter').innerText = `${(waterCount * 0.5).toFixed(1)} / 3.0L`;
+
+            const waterBtns = document.querySelectorAll('.water-btn');
+            state.water.forEach((active, i) => {
+                if(waterBtns[i]) active ? waterBtns[i].classList.add('active') : waterBtns[i].classList.remove('active');
+            });
+
+            state.selectedOptions.forEach((sel, i) => {
+                const btnA = document.getElementById(`opt-${i}-A`);
+                const btnB = document.getElementById(`opt-${i}-B`);
+                const desc = document.getElementById(`desc-${i}`);
+                if(!btnA || !btnB || !desc) return;
+                
+                btnA.classList.remove('active'); btnB.classList.remove('active');
+                if (sel) {
+                    (sel === 'A' ? btnA : btnB).classList.add('active');
+                    desc.innerText = "✓ " + dietaNutri[i][sel].desc;
+                    desc.style.opacity = "1";
+                    desc.classList.add('text-green-500');
+                } else {
+                    desc.innerText = "Pendente...";
+                    desc.style.opacity = "0.5";
+                    desc.classList.remove('text-green-500');
+                }
+            });
+
+            document.getElementById('card-creatina').style.borderColor = state.creatina ? '#4ade80' : 'transparent';
+            document.getElementById('card-fruta').style.borderColor = state.fruta ? '#eab308' : 'transparent';
+            document.getElementById('card-treino').style.borderColor = state.treino ? '#a855f7' : 'transparent';
+
+            const hList = document.getElementById('historyList');
+            if (state.history.length === 0) {
+                hList.innerHTML = '<p class="text-slate-500 italic text-center py-4">Sem histórico.</p>';
+            } else {
+                hList.innerHTML = state.history.map(item => `
+                    <div class="flex justify-between items-center border-b border-slate-700/20 py-2">
+                        <div>
+                            <span class="block font-bold">${item.date}</span>
+                            <span class="opacity-50 text-[9px] uppercase">${item.treino ? 'Treino' : 'OFF'} | ${item.water}L</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="block font-black text-green-500">${item.peso}kg</span>
+                            <span class="opacity-50">${item.kcal} kcal</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function finishDay() {
+            const totals = calculateTotals();
+            const log = {
+                date: new Date().toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'}),
+                peso: state.peso,
+                kcal: totals.tk,
+                water: (state.water.filter(w=>w).length * 0.5).toFixed(1),
+                treino: state.treino
+            };
+            state.history.unshift(log);
+            state.water = Array(6).fill(false);
+            state.selectedOptions = Array(6).fill(null);
+            state.creatina = state.fruta = state.treino = false;
+            render();
+            saveData();
+            alert("Dia finalizado e salvo no histórico!");
+        }
+
+        function resetApp() {
+            if(confirm("Limpar dados de hoje?")) {
+                state.water = Array(6).fill(false);
+                state.selectedOptions = Array(6).fill(null);
+                state.creatina = state.fruta = state.treino = false;
+                render(); saveData();
+            }
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+            const dl = document.createElement('a');
+            dl.setAttribute("href", dataStr);
+            dl.setAttribute("download", "lucas_tracker_sesc_backup.json");
+            dl.click();
+        }
+    </script>
+</body>
+</html>
